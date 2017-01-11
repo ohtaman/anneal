@@ -7,18 +7,21 @@ from .annealer import Annealer
 
 
 class BasicSimulatedAnnealer(Annealer):
-    def __init__(self, max_iter=10000, energy_fn, temperature_fn, get_neighbor_fn):
-        self.max_iter = max_iter
+    def __init__(self, energy_fn, neighbor_fn, max_iter=1000, initial_temperature=100000):
         self.energy_fn = energy_fn
-        self.temperature_fn = temperature_fn
-        self.get_neighbor_fn = get_neighbor_fn
+        self.neighbor_fn = neighbor_fn
+        self.max_iter = max_iter
+        self.initial_temperature = initial_temperature
+
+    def temperature(self):
+        return self.initial_temperature/math.log(1 + self.iter_step) 
 
     def energy(self, state):
         temperature = self.temperature_fn(self)
         return self.energy(state, temperature)
 
     def get_neighbor(self, state):
-        return self.get_neighbor_fn(state)
+        return self.neighbor_fn(state)
 
     def is_acceptable(self, candidate_state, candidate_energy):
         delta = max(0.0, candidate_energy - self.current_energy)
