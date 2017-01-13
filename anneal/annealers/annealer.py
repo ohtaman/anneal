@@ -2,7 +2,6 @@
 
 import abc
 import math
-<<<<<<< HEAD
 import random
 
 
@@ -12,18 +11,13 @@ class Annealer(metaclass=abc.ABCMeta):
         self.current_state = initial_state
         self.current_energy = self.energy(initial_state)
 
-    def update(self, state, energy):
-        self.current_state = state
-        self.current_energy = energy
-
-    def count_up(self, prev_state, prev_energy):
+    def count_up(self, next_state, next_energy, accept):
         self.step_count += 1
 
     def is_acceptable(self, candidate_energy):
         delta = max(0.0, candidate_energy - self.current_energy)
-        return math.exp(-delta) >= random.random()
+        return math.exp(-delta/self.get_temperature()) >= random.random()
 
-    @abc.abstractmethod
     def set_state(self, state, energy=None):
         if energy is None:
             energy = self.get_energy(state)
@@ -37,13 +31,6 @@ class Annealer(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_neighbor(self, state):
         pass
-
-    def count_up(self):
-        self.step_count += 1
-
-    def is_acceptable(self, candidate_energy):
-        energy_diff = min(0.0, candidate_energy - self.current_energy)
-        return math.exp(-energy_diff/self.get_temperarute())
 
     @abc.abstractmethod
     def get_temperature(self):
@@ -62,8 +49,9 @@ class Annealer(metaclass=abc.ABCMeta):
         while not self.is_frozen():
             candidate_state = self.get_neighbor(self.current_state)
             candidate_energy = self.get_energy(candidate_state)
-            if self.is_acceptable(candidate_energy):
+            accept = self.is_acceptable(candidate_energy)
+            self.count_up(candidate_state, candidate_energy, accept)
+            if accept:
                 self.set_state(candidate_state, candidate_energy)
-            self.count_up()
 
         return self.state

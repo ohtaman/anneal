@@ -14,9 +14,9 @@ class BasicSimulatedAnnealer(Annealer):
         self.initial_temperature = initial_temperature
 
     def temperature(self):
-        return self.initial_temperature/math.log(1 + self.iter_step) 
+        return self.initial_temperature**(1/self.iter_step)
 
-    def energy(self, state):
+    def get_energy(self, state):
         temperature = self.temperature_fn(self)
         return self.energy(state, temperature)
 
