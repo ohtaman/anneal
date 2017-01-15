@@ -56,7 +56,7 @@ class ClassicalIsingModel(PhysicalModel):
         for k, v in j.items():
             row = np.ravel_multi_index(k[len(k)//2:], lattice_shape)
             col = np.ravel_multi_index(k[:len(k)//2], lattice_shape)
-            self._j[row, col] = v
+            self._j[row, col] = self._j[col, row] = v  # j must be symmetric.
         self._h = np.zeros(self.lattice_size)
         if h:
             assert h.shape == lattice_shape
@@ -130,11 +130,11 @@ class Annealer(metaclass=abc.ABCMeta):
 
 
 class SimulatedAnnealer(Annealer):
-    def __init__(self, model, initial_temp, temp_factor=0.95, freeze_limit=10):
+    def __init__(self, model, initial_beta, beta_factor=0.95, freeze_limit=10):
         super().__init__(model)
 
-        self.temp = initial_temp
-        self.temp_factor = temp_factor
+        self.beta = initial_beta
+        self.beta_factor = beta_factor
         self.freeze_limit = freeze_limit
         self.freeze_count = 0
         self.min_energy = self.model.get_energy()
@@ -150,8 +150,8 @@ class SimulatedAnnealer(Annealer):
         else:
             self.freeze_count += 1
 
-        self.temp *= self.temp_factor
+        self.beta /= self.beta_factor
 
     @property
     def params(self):
-        return dict(beta=1.0/self.temp)
+        return dict(beta=self.beta)

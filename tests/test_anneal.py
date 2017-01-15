@@ -92,7 +92,7 @@ class TestSimulatedAnnealer(object):
         )
         self.testee = SimulatedAnnealer(
             model=self.model,
-            initial_temp=10.0,
+            initial_beta=1.0,
             freeze_limit=10
         )
 
