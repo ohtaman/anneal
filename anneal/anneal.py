@@ -147,7 +147,7 @@ class QuantumIsingModel(PhysicalModel):
 
         # Quantum term
         coeff = (1/(2*beta))*self._logcoth(beta*gamma/self.trotter_size)
-
+        e += coeff*(flatten[:, 1:]*flatten[:, :-1]).sum(axis=1).mean()
         return e
 
     def update(self, beta, gamma):
