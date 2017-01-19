@@ -1,57 +1,63 @@
 # -*- coding:utf-8 -*-
 
 import abc
-import math
-import random
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class Annealer(metaclass=abc.ABCMeta):
-    def initialize(self, initial_state):
-        self.step_count = 0
-        self.current_state = initial_state
-        self.current_energy = self.energy(initial_state)
+    def __init__(self, model):
+        self.iter_count = 0
+        self.model = model
 
-    def count_up(self, next_state, next_energy, accept):
-        self.step_count += 1
+    def anneal(self, **kwargs):
+        """ Alias of optimize method. """
+        return self.optimize(**kwargs)
 
-    def is_acceptable(self, candidate_energy):
-        delta = max(0.0, candidate_energy - self.current_energy)
-        return math.exp(-delta/self.get_temperature()) >= random.random()
+    def optimize(self, max_iter=None, iter_callback=None):
+        """ Minimize energy of self.model.
 
-    def set_state(self, state, energy=None):
-        if energy is None:
-            energy = self.get_energy(state)
-        self.current_state = state
-        self.current_energy = energy
- 
-    @abc.abstractmethod
-    def get_energy(self, state):
-        pass
+        Args:
+            max_iter (int): Maximum number of iterations
+            iter_callback (callable): Callback function which called on each iteration.
 
-    @abc.abstractmethod
-    def get_neighbor(self, state):
-        pass
+        Returns:
+            bool: True if the state is frozen, False if iteration count exceeds.
+        """
+        iter_count = 0
+        while not self.is_frozen():
+            if max_iter is not None and iter_count > max_iter:
+                break
 
-    @abc.abstractmethod
-    def get_temperature(self):
-        pass
+            state_is_updated = self.model.update()
+            self.update(state_is_updated)
+            self.iter_count += 1
+            iter_count += 1
+            if iter_callback:
+                iter_callback(self, state_is_updated)
+        else:
+            pass
+        return self.is_frozen()
 
     @abc.abstractmethod
     def is_frozen(self):
+        """ Frozen function.
+
+        Returns:
+            bool: True if the state is frozen, False if not.
+        """
         pass
 
-    def anneal(self, **kwargs):
-        return self.optimize(**kwargs)
+    @abc.abstractmethod
+    def update(self, state_is_updated):
+        """ Update model parameters.
 
-    def optimize(self, initial_state=None):
-        self.initialize(initial_state)
+        Args:
+            state_is_updated (bool): True if the model state is updated, False if not.
 
-        while not self.is_frozen():
-            candidate_state = self.get_neighbor(self.current_state)
-            candidate_energy = self.get_energy(candidate_state)
-            accept = self.is_acceptable(candidate_energy)
-            self.count_up(candidate_state, candidate_energy, accept)
-            if accept:
-                self.set_state(candidate_state, candidate_energy)
-
-        return self.state
+        Returns:
+            bool: True if model parameters are changed, False if not.
+        """
+        pass

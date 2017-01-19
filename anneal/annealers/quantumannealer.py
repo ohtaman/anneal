@@ -3,11 +3,12 @@
 from .annealer import Annealer
 
 
-class SimulatedAnnealer(Annealer):
-    def __init__(self, model, beta_factor=0.95, freeze_limit=100):
-        super().__init__(model)
+class QuantumAnnealer(Annealer):
+    def __init__(self, model, beta_factor=0.95, gamma_factor=0.9, freeze_limit=100):
+        super().__init__( model)
 
         self.beta_factor = beta_factor
+        self.gamma_factor = gamma_factor
         self.freeze_limit = freeze_limit
         self.freeze_count = 0
         self.min_energy = self.model.energy
@@ -24,3 +25,4 @@ class SimulatedAnnealer(Annealer):
             self.freeze_count += 1
 
         self.model.beta /= self.beta_factor
+        self.model.gamma *= self.gamma_factor
