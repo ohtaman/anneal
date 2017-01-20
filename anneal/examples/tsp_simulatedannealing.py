@@ -37,10 +37,14 @@ def build_j(positions, f=100.0):
     for t in range(n):
         for a in range(n):
             for b in range(n):
-                    j[t, a, t, b] += f
+                if a == b:
+                    break
+                j[t, a, t, b] += f
 
     for t in range(n):
         for u in range(n):
+            if t == u:
+                break
             for a in range(n):
                 j[t, a, u, a] += f
 
@@ -60,6 +64,9 @@ def build_h(positions, g=100.0):
     for t in range(n):
         for a in range(n):
             h[t, a] += 4*(n-2)*g
+
+    # Enforce spin[0, 0] == 1.
+    h[0, 0] -= 10*n*g
 
     return h
 
