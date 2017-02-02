@@ -99,5 +99,6 @@ def main(argv):
         for i in range(len(POSITIONS))
     ))
 
+
 if __name__ == '__main__':
     exit(main(sys.argv[1:]))
