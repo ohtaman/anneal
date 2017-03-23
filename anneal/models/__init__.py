@@ -1,3 +1,3 @@
 from .physicalmodel import PhysicalModel
-from .isingmodel import IsingModel
+from .classicalisingmodel import ClassicalIsingModel
 from .quantumisingmodel import QuantumIsingModel

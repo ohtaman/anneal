@@ -3,23 +3,22 @@
 import abc
 
 
-class PhysicalModel(metaclass=abc.ABCMeta):
+class PhysicalModel(object, metaclass=abc.ABCMeta):
+    class State(object):
+        pass
+
+    def objective_value(self):
+        return self.energy()
+
     @abc.abstractmethod
-    def get_energy(self):
+    def energy(self, state=None):
         pass
 
     @abc.abstractmethod
-    def get_state(self):
-        pass
-
-    @abc.abstractmethod
-    def update(self):
+    def update_state(self):
         pass
 
     @property
-    def energy(self):
-        return self.get_energy()
-
-    @property
+    @abc.abstractmethod
     def state(self):
-        return self.get_state()
+        pass

@@ -1,11 +1,7 @@
 # -*- coding:utf-8 -*-
 
 import abc
-import logging
-
-
-logger = logging.getLogger(__name__)
-
+import sys
 
 class Annealer(metaclass=abc.ABCMeta):
     def __init__(self, model):
@@ -13,32 +9,26 @@ class Annealer(metaclass=abc.ABCMeta):
         self.model = model
 
     def anneal(self, **kwargs):
-        """ Alias of optimize method. """
+        """ Alias of self.optimize. """
         return self.optimize(**kwargs)
 
-    def optimize(self, max_iter=None, iter_callback=None):
-        """ Minimize energy of self.model.
+    def optimize(self, max_iter=sys.maxsize, iter_callback=None):
+        """ Minimize the energy of self.model by annealing.
 
         Args:
-            max_iter (int): Maximum number of iterations
+            max_iter (int): Maximum number of iterations. Defaults to inf.
             iter_callback (callable): Callback function which called on each iteration.
 
         Returns:
             bool: True if the state is frozen, False if iteration count exceeds.
         """
-        iter_count = 0
-        while not self.is_frozen():
-            if max_iter is not None and iter_count > max_iter:
-                break
-
-            state_is_updated = self.model.update()
-            self.update(state_is_updated)
+        while (not self.is_frozen()) and (self.iter_count < max_iter):
+            state_is_updated = self.model.update_state()
+            model_is_updated = self.update_model(state_is_updated)
             self.iter_count += 1
-            iter_count += 1
-            if iter_callback:
-                iter_callback(self, state_is_updated)
-        else:
-            pass
+            if iter_callback is not None:
+                iter_callback(self, state_is_updated, model_is_updated)
+
         return self.is_frozen()
 
     @abc.abstractmethod
@@ -51,7 +41,7 @@ class Annealer(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def update(self, state_is_updated):
+    def update_model(self, state_is_updated):
         """ Update model parameters.
 
         Args:
