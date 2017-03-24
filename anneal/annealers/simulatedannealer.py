@@ -18,7 +18,7 @@ class SimulatedAnnealer(Annealer):
         return (
             'SimulatedAnnealer('
             'model={}, '
-            'beta_actor={}, '
+            'beta_factor={}, '
             'freeze_limit={}, '
             'update_limit={})'
         ).format(

@@ -23,7 +23,7 @@ class QuantumAnnealer(Annealer):
         return (
             'QuantumAnnealer('
             'model={}, '
-            'beta_actor={}, '
+            'beta_factor={}, '
             'gamma_factor={}, '
             'freeze_limit={}, '
             'update_limit={})'
