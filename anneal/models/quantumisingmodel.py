@@ -15,7 +15,7 @@ from .classicalisingmodel import ClassicalIsingModel
 class QuantumIsingModel(PhysicalModel):
     class State(PhysicalModel.State):
         """
-        State of classical ising model.
+        State of Quantum ising model.
 
         Arguments:
             sigma (ndarray or list): The sigma value.
@@ -33,7 +33,7 @@ class QuantumIsingModel(PhysicalModel):
 
             Arguments:
                 shape (tuple of int): Shape of classical state.
-                type (BitType): The type of sigma, SPIN (sigma is -1 or 1) or BIT (sigma is 0 or 1). Defaults to BIT.
+                n_trotter (int): number of Trotter layers
             """
             pass
 
