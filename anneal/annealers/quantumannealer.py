@@ -6,7 +6,7 @@ from .annealer import Annealer
 
 
 class QuantumAnnealer(Annealer):
-    def __init__(self, model, beta_factor=0.99, gamma_factor=0.99, freeze_limit=100, update_limit=10):
+    def __init__(self, model, beta_factor=1.0, gamma_factor=0.99, freeze_limit=100, update_limit=10):
         super().__init__(model)
 
         self.beta_factor = beta_factor
