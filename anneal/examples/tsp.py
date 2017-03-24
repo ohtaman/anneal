@@ -16,27 +16,27 @@ POSITIONS = [
     (24216.6667, 123933),
     (24233.3333, 123950),
     (24233.3333, 124016),
-    (24250.0000, 123866),
-    (24300.0000, 123683),
-    (24316.6667, 123900),
-    (24316.6667, 124083),
-    (24333.3333, 123733),
-    (24333.3333, 123983),
-    (24333.3333, 124150),
-    (24333.3333, 124200),
-    (24350.0000, 123733),
-    (24350.0000, 123750),
-    (24350.0000, 124216),
-    (24350.0000, 124233),
-    (24383.3333, 123750),
-    (24383.3333, 124150),
-    (24400.0000, 123833),
-    (24416.6667, 123766),
-    (24416.6667, 124250),
-    (24433.3333, 122983),
-    (24450.0000, 122933),
-    (24450.0000, 124133),
-    (24450.0000, 124183),
+    # (24250.0000, 123866),
+    # (24300.0000, 123683),
+    # (24316.6667, 123900),
+    # (24316.6667, 124083),
+    # (24333.3333, 123733),
+    # (24333.3333, 123983),
+    # (24333.3333, 124150),
+    # (24333.3333, 124200),
+    # (24350.0000, 123733),
+    # (24350.0000, 123750),
+    # (24350.0000, 124216),
+    # (24350.0000, 124233),
+    # (24383.3333, 123750),
+    # (24383.3333, 124150),
+    # (24400.0000, 123833),
+    # (24416.6667, 123766),
+    # (24416.6667, 124250),
+    # (24433.3333, 122983),
+    # (24450.0000, 122933),
+    # (24450.0000, 124133),
+    # (24450.0000, 124183),
     # (24466.6667, 123000),
     # (24500.0000, 124283),
     # (24583.3333, 124316),
@@ -142,20 +142,19 @@ def solve_tsp():
     print('annealer: {}'.format(best_annealer))
     print('iterations(average): {}'.format(iter/16))
     print('objective: {}'.format(best_model.objective_value()))
-    print('state: {}'.format(best_model.state.to_array()))
+    print('best_state: {}'.format(best_model.state.to_array()))
     print('validity: {}'.format(check_constraints(best_model.state)))
 
     start = time.time()
-    q_model = QuantumIsingModel(j, h, c, neighbor_size=8, state_shape=h.shape, beta=1, gamma=10, n_trotter=16)
+    q_model = QuantumIsingModel(j, h, c, neighbor_size=8, state_shape=h.shape, beta=1, gamma=0.1, n_trotter=16)
     q_annealer = QuantumAnnealer(q_model, update_limit=100, freeze_limit=2000)
     q_annealer.anneal(iter_callback=callback)
     observed = q_model.observe_best()
     print('annealing time: {}'.format(time.time() - start))
     print('annealer: {}'.format(q_annealer))
     print('iterations: {}'.format(q_annealer.iter_count))
-    print('objective(average): {}'.format(q_model.objective_value()))
-    print('bset state: {}'.format(observed.to_array()))
-    print('energy of observed: {}'.format(c_model.energy(observed)))
+    print('objective: {}'.format(q_model.objective_value()))
+    print('best state: {}'.format(observed.to_array()))
     print('validity: {}'.format(check_constraints(observed)))
 
 

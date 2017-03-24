@@ -193,12 +193,28 @@ class QuantumIsingModel(PhysicalModel):
         if state is None:
             state = self.state
         flatten_state = state.get_flatten_array()
-        e = -self.c
-        for trotter_idx in range(self.n_trotter):
-            trotter_layer = flatten_state[:, trotter_idx]
-            e -= trotter_layer.dot(self._flatten_j.dot(trotter_layer))/self.n_trotter
-            e -= self._flatten_h.dot(trotter_layer)/self.n_trotter
-        return e
+
+        return min([
+            self._classical_layer_energy(flatten_state[:, trotter_idx])
+            for trotter_idx in range(self.n_trotter)
+        ])
+
+    def _classical_layer_energy(self, trotter_layer):
+        return (
+            - trotter_layer.dot(self._flatten_j.dot(trotter_layer))
+            - self._flatten_h.dot(trotter_layer)
+            - self.c
+        )
+
+    def classical_energy(self, state=None):
+        if state is None:
+            state = self.state
+        flatten_state = state.get_flatten_array()
+
+        return np.mean([
+            self._classical_layer_energy(flatten_state[:, trotter_idx])
+            for trotter_idx in range(self.n_trotter)
+        ])
 
     def quantum_energy(self, state=None):
         if state is None:
@@ -253,9 +269,7 @@ class QuantumIsingModel(PhysicalModel):
 
     def observe(self):
         trotter_idx = np.random.randint(self.n_trotter)
-        classical_sigma = self._flatten[:, trotter_idx].reshape(self.shape)
-
-        return self.state.ClassicalState(classical_sigma)
+        return self.state.get_trotter_layer(trotter_idx)
 
     def observe_best(self):
         classical_model = ClassicalIsingModel(
