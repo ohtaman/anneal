@@ -123,15 +123,27 @@ def solve_tsp():
     j, h, c = build_weights(POSITIONS, 500)
 
     start = time.time()
-    c_model = ClassicalIsingModel(j, h, c, neighbor_size=8, state_shape=h.shape, beta=1)
-    c_annealer = SimulatedAnnealer(c_model, update_limit=100, freeze_limit=20000)
-    c_annealer.anneal(iter_callback=callback)
+    min_energy = float('inf')
+    best_annealer = None
+    iter = 0
+    for i in range(16):
+        print('{}th challenge.'.format(i))
+        c_model = ClassicalIsingModel(j, h, c, neighbor_size=8, state_shape=h.shape, beta=1)
+        c_annealer = SimulatedAnnealer(c_model, update_limit=100, freeze_limit=20000)
+        c_annealer.anneal(iter_callback=callback)
+        energy = c_model.objective_value()
+        iter += c_annealer.iter_count
+        if energy < min_energy:
+            min_energy = energy
+            best_annealer = c_annealer
+
+    best_model = best_annealer.model
     print('annealing time: {}'.format(time.time() - start))
-    print('annealer: {}'.format(c_annealer))
-    print('iterations: {}'.format(c_annealer.iter_count))
-    print('objective: {}'.format(c_model.objective_value()))
-    print('state: {}'.format(c_model.state.to_array()))
-    print('validity: {}'.format(check_constraints(c_model.state)))
+    print('annealer: {}'.format(best_annealer))
+    print('iterations(average): {}'.format(iter/16))
+    print('objective: {}'.format(best_model.objective_value()))
+    print('state: {}'.format(best_model.state.to_array()))
+    print('validity: {}'.format(check_constraints(best_model.state)))
 
     start = time.time()
     q_model = QuantumIsingModel(j, h, c, neighbor_size=8, state_shape=h.shape, beta=1, gamma=10, n_trotter=16)
