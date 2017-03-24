@@ -68,7 +68,7 @@ class QuantumIsingModel(PhysicalModel):
             return self.ClassicalState(sigma)
 
         def to_array(self):
-            return self._flatten.reshape(self.shape)
+            return self._flatten.reshape(self.shape + (self.n_trotter,))
 
         @abc.abstractmethod
         def flip_spins(self, indices):
