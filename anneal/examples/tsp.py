@@ -129,7 +129,7 @@ def solve_tsp():
     for i in range(16):
         print('{}th challenge.'.format(i))
         c_model = ClassicalIsingModel(j, h, c, neighbor_size=8, state_shape=h.shape, beta=1)
-        c_annealer = SimulatedAnnealer(c_model, update_limit=100, freeze_limit=20000)
+        c_annealer = SimulatedAnnealer(c_model, update_limit=100, freeze_limit=2000)
         c_annealer.anneal(iter_callback=callback)
         energy = c_model.objective_value()
         iter += c_annealer.iter_count
