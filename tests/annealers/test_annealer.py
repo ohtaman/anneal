@@ -10,7 +10,7 @@ class TestAnnealer(object):
         def is_frozen(self):
             return True
 
-        def update(self, state_is_updated):
+        def update_model(self, state_is_updated):
             return True
 
     def test_can_create_annealer(self):
