@@ -21,13 +21,14 @@ class QuantumIsingModel(PhysicalModel):
             sigma (ndarray or list): The sigma value.
         """
         def __init__(self, sigma, classical_state_class):
-            self.shape = sigma.shape[:-1]  # shape means shape of classical state.
+            # shape means shape of classical state.
+            self.shape = sigma.shape[:-1]
             self.n_trotter = sigma.shape[-1]
             self._flatten = np.array(sigma).reshape(-1, self.n_trotter)
             self.ClassicalState = classical_state_class
 
         @abc.abstractclassmethod
-        def random_state(cls, shape, n_trotter=32):
+        def random_state(cls, shape, n_trotter=16, random=None):
             """
             Generate random state with given shape.
 
@@ -86,9 +87,11 @@ class QuantumIsingModel(PhysicalModel):
             )
 
         @classmethod
-        def random_state(cls, shape, n_trotter):
+        def random_state(cls, shape, n_trotter, random=None):
+            if random is None:
+                random = np.random
             shape_with_trotter = tuple(shape) + (n_trotter,)
-            sigma = np.random.randint(0, 2, size=shape_with_trotter)
+            sigma = random.randint(0, 2, size=shape_with_trotter)
             return cls(sigma)
 
         def flip_spins(self, indices):
@@ -104,16 +107,18 @@ class QuantumIsingModel(PhysicalModel):
             )
 
         @classmethod
-        def random_state(cls, shape, n_trotter):
+        def random_state(cls, shape, n_trotter, random=None):
+            if random is None:
+                random = np.random
             shape_with_trotter = tuple(shape) + (n_trotter,)
-            sigma = np.random.randint(0, 2, size=shape_with_trotter)
+            sigma = random.randint(0, 2, size=shape_with_trotter)
             return cls(2*sigma - 1)
 
         def flip_spins(self, indices):
             for index in indices:
                 self[index] *= -1
 
-    def __init__(self, j, h, c=0, state_type='qubo', state_shape=None, n_trotter=16, beta=10, gamma=0.1, state=None, neighbor_size=None):
+    def __init__(self, j, h, c=0, state_type='qubo', state_shape=None, n_trotter=16, beta=10, gamma=0.1, state=None, neighbor_size=None, random=None):
         if state is None:
             assert(state_shape is not None)
             if state_type == 'qubo':
@@ -125,6 +130,7 @@ class QuantumIsingModel(PhysicalModel):
             state = State.random_state(state_shape, n_trotter=n_trotter)
         else:
             assert(state_shape is None or state_shape == state.shape)
+            n_trotter = state.n_trotter
         if neighbor_size is None:
             neighbor_size = state.size
 
@@ -136,6 +142,10 @@ class QuantumIsingModel(PhysicalModel):
         self.gamma = gamma
         self._state = state
         self.neighbor_size = neighbor_size
+        if isinstance(random, np.random.RandomState):
+            self.random_state = random
+        else:
+            self.random_state = np.random.RandomState(random)
 
         if isinstance(j, dict):
             dok_flatten_j = sp.dok_matrix((self.state.size, self.state.size))
@@ -185,7 +195,7 @@ class QuantumIsingModel(PhysicalModel):
         return self.__repr__()
 
     def energy(self, state=None):
-        classical_energy = self.objective_value(state)
+        classical_energy = self.classical_energy(state)
         quantum_energy = self.quantum_energy(state)
         return classical_energy + quantum_energy
 
@@ -221,12 +231,12 @@ class QuantumIsingModel(PhysicalModel):
             state = self.state
         flatten_state = state.get_flatten_array()
         e = 0
-        if not self.n_trotter == 1:
+        if not self.n_trotter == 1 and self.gamma != 0:
             coeff = self._logcoth(self.beta*self.gamma/self.n_trotter)/(2.*self.beta)
             if self.state.__class__ == self.QUBOState:
-                sigma = 2*flatten_state - 1
-                e -= coeff*(sigma[:, :-1]*sigma[:, 1:]).sum()
-                e -= coeff*(sigma[:, -1].dot(sigma[:, 0]))
+                spin = 2*flatten_state - 1
+                e -= coeff*(spin[:, :-1]*spin[:, 1:]).sum()
+                e -= coeff*(spin[:, -1].dot(spin[:, 0]))
             else:
                 e -= coeff*(flatten_state[:, :-1]*flatten_state[:, 1:]).sum()
                 e -= coeff*(flatten_state[:, -1].dot(flatten_state[:, 0]))
@@ -239,7 +249,7 @@ class QuantumIsingModel(PhysicalModel):
             flipped = self._flip_spins(trotter_layer=layer)
             candidate_energy = self.energy()
             delta = max(0.0, candidate_energy - current_energy)
-            if math.exp(-self.beta*delta) > random.random():
+            if math.exp(-self.beta*delta) > self.random_state.rand():
                 updated = True
             else:
                 # Cancel flipping
@@ -249,16 +259,16 @@ class QuantumIsingModel(PhysicalModel):
     def _flip_spins(self, indices=None, trotter_layer=None):
         if indices is None:
             if trotter_layer is None:
-                trotter_layer = np.random.randint(self.n_trotter)
+                trotter_layer = self.random_state.randint(self.n_trotter)
             num_flip = min(
-                np.random.randint(self.neighbor_size) + 1,
+                self.random_state.randint(self.neighbor_size) + 1,
                 self.state.size
             )
             indices = [
                 np.unravel_index(
                     flatten_idx, self.state.shape
                 ) + (trotter_layer,)
-                for flatten_idx in np.random.choice(
+                for flatten_idx in self.random_state.choice(
                     range(self.state.size),
                     num_flip,
                     replace=False
@@ -268,7 +278,7 @@ class QuantumIsingModel(PhysicalModel):
         return indices
 
     def observe(self):
-        trotter_idx = np.random.randint(self.n_trotter)
+        trotter_idx = self.random_state.randint(self.n_trotter)
         return self.state.get_trotter_layer(trotter_idx)
 
     def observe_best(self):
