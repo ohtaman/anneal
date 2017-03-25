@@ -232,7 +232,7 @@ class QuantumIsingModel(PhysicalModel):
         flatten_state = state.get_flatten_array()
         e = 0
         if not self.n_trotter == 1 and self.gamma != 0:
-            coeff = self._logcoth(self.beta*self.gamma/self.n_trotter)/(2.*self.beta)
+            coeff = -np.log(np.tanh(self.beta*self.gamma/self.n_trotter))/(2.*self.beta)
             if self.state.__class__ == self.QUBOState:
                 spin = 2*flatten_state - 1
                 e -= coeff*(spin[:, :-1]*spin[:, 1:]).sum()
@@ -245,12 +245,13 @@ class QuantumIsingModel(PhysicalModel):
     def update_state(self):
         current_energy = self.energy()
         updated = False
-        for layer in range(self.n_trotter):
+        for layer in np.random.permutation(self.n_trotter):
             flipped = self._flip_spins(trotter_layer=layer)
             candidate_energy = self.energy()
             delta = max(0.0, candidate_energy - current_energy)
             if math.exp(-self.beta*delta) > self.random_state.rand():
                 updated = True
+                current_energy = candidate_energy
             else:
                 # Cancel flipping
                 self._flip_spins(flipped)
@@ -301,7 +302,3 @@ class QuantumIsingModel(PhysicalModel):
     @property
     def state(self):
         return self._state
-
-    @staticmethod
-    def _logcoth(x):
-        return np.log(np.cosh(x)/np.sinh(x))
