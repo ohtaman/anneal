@@ -24,7 +24,7 @@ class ClassicalIsingModel(PhysicalModel):
             self.shape = sigma.shape
 
         @abc.abstractclassmethod
-        def random_state(cls, shape):
+        def random_state(cls, shape, random=None):
             """
             Generate random state with given shape.
 
@@ -67,8 +67,10 @@ class ClassicalIsingModel(PhysicalModel):
 
     class QUBOState(State):
         @classmethod
-        def random_state(cls, shape):
-            return cls(np.random.randint(0, 2, size=shape))
+        def random_state(cls, shape, random=None):
+            if random is None:
+                random = np.random
+            return cls(random.randint(0, 2, size=shape))
 
         def flip_spins(self, indices):
             for index in indices:
@@ -78,15 +80,17 @@ class ClassicalIsingModel(PhysicalModel):
 
     class IsingState(State):
         @classmethod
-        def random_state(cls, shape):
-            return cls(2*np.random.randint(0, 2, size=shape) - 1)
+        def random_state(cls, shape, random=None):
+            if random is None:
+                random = np.random
+            return cls(2*random.randint(0, 2, size=shape) - 1)
 
         def flip_spins(self, indices):
             for index in indices:
                 flatten_idx = np.ravel_multi_index(index, self.shape)
                 self._flatten[flatten_idx] *= -1
 
-    def __init__(self, j, h, c=0, state_type='qubo', state_shape=None, beta=1, state=None, neighbor_size=None):
+    def __init__(self, j, h, c=0, state_type='qubo', state_shape=None, beta=1, state=None, neighbor_size=None, random=None):
         if state is None:
             assert(state_shape is not None)
             if state_type == 'qubo':
@@ -107,6 +111,10 @@ class ClassicalIsingModel(PhysicalModel):
         self.beta = beta
         self._state = state
         self.neighbor_size = neighbor_size
+        if isinstance(random, np.random.RandomState):
+            self.random_state = random
+        else:
+            self.random_state = np.random.RandomState(random)
 
         if isinstance(j, dict):
             dok_flatten_j = sp.dok_matrix((self.state.size, self.state.size))
@@ -161,7 +169,7 @@ class ClassicalIsingModel(PhysicalModel):
         flipped = self._flip_spins()
         candidate_energy = self.energy()
         delta = max(0.0, candidate_energy - current_energy)
-        if math.exp(-self.beta*delta) > random.random():
+        if math.exp(-self.beta*delta) > self.random_state.rand():
             return True
         else:
             # Cancel flipping
@@ -170,10 +178,10 @@ class ClassicalIsingModel(PhysicalModel):
 
     def _flip_spins(self, indices=None):
         if indices is None:
-            num_flip = min(np.random.randint(self.neighbor_size) + 1, self.state.size)
+            num_flip = min(self.random_state.randint(self.neighbor_size) + 1, self.state.size)
             indices = [
                 np.unravel_index(flatten_index, self.state.shape)
-                for flatten_index in np.random.choice(
+                for flatten_index in self.random_state.choice(
                     range(self.state.size),
                     num_flip,
                     replace=False
