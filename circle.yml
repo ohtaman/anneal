@@ -5,8 +5,7 @@ machine:
 dependencies:
   pre:
     - pip install -U pip
-    - pip install -r requirements.txt:
-      - timeout: 12000
+    - pip install -U -r requirements.txt
 
 test:
   override:
