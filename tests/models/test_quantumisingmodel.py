@@ -84,7 +84,7 @@ class TestQuantumIsingModel(object):
         assert testee.c == c
         assert testee.beta == beta
         assert testee.gamma == gamma
-        assert testee.neighbor_size == 3
+        assert testee.neighbor_size == 1
         assert testee.state.shape == (3,)
         assert testee.state.__class__ == QuantumIsingModel.QUBOState
 
@@ -125,7 +125,7 @@ class TestQuantumIsingModel(object):
         beta = 1
         sigma = np.array([[1, 1], [1, 0], [0, 1]])
         state = QuantumIsingModel.QUBOState(sigma)
-        testee = QuantumIsingModel(j, h, c, state=state, beta=beta, random=100)
+        testee = QuantumIsingModel(j, h, c, state=state, beta=beta, random=2)
         is_updated = testee.update_state()
         assert is_updated is True
         assert (testee.state.to_array() != sigma).any()

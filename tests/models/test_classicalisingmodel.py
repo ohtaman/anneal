@@ -75,7 +75,7 @@ class TestClassicalIsingModel(object):
         assert testee.h == h
         assert testee.c == c
         assert testee.beta == beta
-        assert testee.neighbor_size == 3
+        assert testee.neighbor_size == 1
         assert testee.state.shape == (3,)
         assert testee.state.__class__ == ClassicalIsingModel.QUBOState
 
@@ -105,7 +105,7 @@ class TestClassicalIsingModel(object):
         beta = 1
         sigma = np.array([1, 1, 0])
         state = ClassicalIsingModel.QUBOState(sigma)
-        testee = ClassicalIsingModel(j, h, c, state=state, beta=beta, random=100)
+        testee = ClassicalIsingModel(j, h, c, state=state, beta=beta, random=2)
         is_updated = testee.update_state()
         assert is_updated is True
         assert (testee.state.to_array() != [1, 1, 0]).any()
