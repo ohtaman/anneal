@@ -16,20 +16,20 @@ POSITIONS = [
     (24216.6667, 123933),
     (24233.3333, 123950),
     (24233.3333, 124016),
-    # (24250.0000, 123866),
-    # (24300.0000, 123683),
-    # (24316.6667, 123900),
-    # (24316.6667, 124083),
-    # (24333.3333, 123733),
-    # (24333.3333, 123983),
-    # (24333.3333, 124150),
-    # (24333.3333, 124200),
-    # (24350.0000, 123733),
-    # (24350.0000, 123750),
-    # (24350.0000, 124216),
-    # (24350.0000, 124233),
-    # (24383.3333, 123750),
-    # (24383.3333, 124150),
+    (24250.0000, 123866),
+    (24300.0000, 123683),
+    (24316.6667, 123900),
+    (24316.6667, 124083),
+    (24333.3333, 123733),
+    (24333.3333, 123983),
+    (24333.3333, 124150),
+    (24333.3333, 124200),
+    (24350.0000, 123733),
+    (24350.0000, 123750),
+    (24350.0000, 124216),
+    (24350.0000, 124233),
+    (24383.3333, 123750),
+    (24383.3333, 124150),
     # (24400.0000, 123833),
     # (24416.6667, 123766),
     # (24416.6667, 124250),
@@ -120,7 +120,7 @@ def check_constraints(state):
     )
 
 def solve_tsp():
-    j, h, c = build_weights(POSITIONS, 500)
+    j, h, c = build_weights(POSITIONS, 1)
 
     start = time.time()
     min_energy = float('inf')
@@ -128,8 +128,8 @@ def solve_tsp():
     iter = 0
     for i in range(16):
         print('{}th challenge.'.format(i))
-        c_model = ClassicalIsingModel(j, h, c, neighbor_size=8, state_shape=h.shape, beta=1)
-        c_annealer = SimulatedAnnealer(c_model, update_limit=100, freeze_limit=2000)
+        c_model = ClassicalIsingModel(j, h, c, state_shape=h.shape)
+        c_annealer = SimulatedAnnealer(c_model)
         c_annealer.anneal(iter_callback=callback)
         energy = c_model.objective_value()
         iter += c_annealer.iter_count
@@ -146,8 +146,8 @@ def solve_tsp():
     print('validity: {}'.format(check_constraints(best_model.state)))
 
     start = time.time()
-    q_model = QuantumIsingModel(j, h, c, neighbor_size=8, state_shape=h.shape, beta=1, gamma=0.1, n_trotter=16)
-    q_annealer = QuantumAnnealer(q_model, update_limit=100, freeze_limit=2000)
+    q_model = QuantumIsingModel(j, h, c, state_shape=h.shape, n_trotter=16)
+    q_annealer = QuantumAnnealer(q_model)
     q_annealer.anneal(iter_callback=callback)
     observed = q_model.observe_best()
     print('annealing time: {}'.format(time.time() - start))

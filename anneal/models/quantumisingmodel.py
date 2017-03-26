@@ -2,7 +2,6 @@
 
 import abc
 import math
-import random
 import sys
 
 import numpy as np
@@ -118,7 +117,7 @@ class QuantumIsingModel(PhysicalModel):
             for index in indices:
                 self[index] *= -1
 
-    def __init__(self, j, h, c=0, state_type='qubo', state_shape=None, n_trotter=16, beta=10, gamma=0.1, state=None, neighbor_size=None, random=None):
+    def __init__(self, j, h, c=0, state_type='qubo', state_shape=None, n_trotter=16, beta=1000, gamma=1.0, state=None, neighbor_size=1, random=None):
         if state is None:
             assert(state_shape is not None)
             if state_type == 'qubo':
@@ -131,8 +130,6 @@ class QuantumIsingModel(PhysicalModel):
         else:
             assert(state_shape is None or state_shape == state.shape)
             n_trotter = state.n_trotter
-        if neighbor_size is None:
-            neighbor_size = state.size
 
         self.j = j
         self.h = h
@@ -231,8 +228,10 @@ class QuantumIsingModel(PhysicalModel):
             state = self.state
         flatten_state = state.get_flatten_array()
         e = 0
-        if not self.n_trotter == 1 and self.gamma != 0:
-            coeff = -np.log(np.tanh(self.beta*self.gamma/self.n_trotter))/(2.*self.beta)
+        if not self.n_trotter == 1:
+            # Avoid overflow
+            beta_gamma = max(np.finfo(float).eps, self.beta*self.gamma)
+            coeff = -np.log(np.tanh(beta_gamma/self.n_trotter))/(2.*self.beta)
             if self.state.__class__ == self.QUBOState:
                 spin = 2*flatten_state - 1
                 e -= coeff*(spin[:, :-1]*spin[:, 1:]).sum()

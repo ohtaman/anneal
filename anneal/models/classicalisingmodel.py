@@ -2,7 +2,6 @@
 
 import abc
 import math
-import random
 
 import numpy as np
 import scipy.sparse as sp
@@ -90,7 +89,7 @@ class ClassicalIsingModel(PhysicalModel):
                 flatten_idx = np.ravel_multi_index(index, self.shape)
                 self._flatten[flatten_idx] *= -1
 
-    def __init__(self, j, h, c=0, state_type='qubo', state_shape=None, beta=1, state=None, neighbor_size=None, random=None):
+    def __init__(self, j, h, c=0, state_type='qubo', state_shape=None, beta=0.1, state=None, neighbor_size=1, random=None):
         if state is None:
             assert(state_shape is not None)
             if state_type == 'qubo':
@@ -102,8 +101,6 @@ class ClassicalIsingModel(PhysicalModel):
             state = State.random_state(state_shape)
         else:
             assert(state_shape is None or state_shape == state.shape)
-        if neighbor_size is None:
-            neighbor_size = state.size
 
         self.j = j
         self.h = h
