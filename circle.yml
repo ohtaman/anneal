@@ -1,6 +1,13 @@
 machine:
   python:
     version: 3.5.1
+
+dependencies:
+  pre:
+    - pip install -U pip
+    - pip install -r requirements.txt:
+      - timeout: 12000
+
 test:
   override:
     - python setup.py test
