@@ -2,4 +2,4 @@
 -r test.txt
 
 # Lint
-flake8
+flake8==3.2.1
