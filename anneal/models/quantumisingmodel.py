@@ -272,7 +272,9 @@ class QuantumIsingModel(PhysicalModel):
         best_state = None
         for idx in range(self.n_trotter):
             classical_state = self.state.get_trotter_layer(idx)
-            classical_energy = self._classical_layer_energy(classical_state)
+            classical_energy = self._classical_layer_energy(
+                classical_state._flatten
+            )
             if classical_energy < min_energy:
                 min_energy = classical_energy
                 best_state = classical_state
