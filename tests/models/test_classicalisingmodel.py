@@ -75,7 +75,6 @@ class TestClassicalIsingModel(object):
         assert testee.h == h
         assert testee.c == c
         assert testee.beta == beta
-        assert testee.neighbor_size == 1
         assert testee.state.shape == (3,)
         assert testee.state.__class__ == ClassicalIsingModel.QUBOState
 

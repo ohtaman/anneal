@@ -84,7 +84,6 @@ class TestQuantumIsingModel(object):
         assert testee.c == c
         assert testee.beta == beta
         assert testee.gamma == gamma
-        assert testee.neighbor_size == 1
         assert testee.state.shape == (3,)
         assert testee.state.__class__ == QuantumIsingModel.QUBOState
 
