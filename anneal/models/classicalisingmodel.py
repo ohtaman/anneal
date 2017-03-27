@@ -162,9 +162,9 @@ class ClassicalIsingModel(PhysicalModel):
 
     def update_state(self):
         updated = False
-        indices = np.unravel_index(
-            self.random_state.permutation(self.state.size),
-            self.state.shape
+        indices = (
+            np.unravel_index(_, self.state.shape)
+            for _ in self.random_state.permutation(self.state.size)
         )
         current_energy = self.energy()
         for idx in indices:

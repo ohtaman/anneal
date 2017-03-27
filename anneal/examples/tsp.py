@@ -23,13 +23,13 @@ POSITIONS = [
     (24333.3333, 123733),
     (24333.3333, 123983),
     (24333.3333, 124150),
-    (24333.3333, 124200),
-    (24350.0000, 123733),
-    (24350.0000, 123750),
-    (24350.0000, 124216),
-    (24350.0000, 124233),
-    (24383.3333, 123750),
-    (24383.3333, 124150),
+    # (24333.3333, 124200),
+    # (24350.0000, 123733),
+    # (24350.0000, 123750),
+    # (24350.0000, 124216),
+    # (24350.0000, 124233),
+    # (24383.3333, 123750),
+    # (24383.3333, 124150),
     # (24400.0000, 123833),
     # (24416.6667, 123766),
     # (24416.6667, 124250),
@@ -71,7 +71,7 @@ def dist(a, b):
     return np.sqrt(((a - b)**2).sum())
 
 
-def build_weights(positions, coeff=500):
+def build_weights(positions, coeff=1.0):
     n_cities = len(positions)
 
     j = collections.defaultdict(int)
@@ -106,10 +106,13 @@ def build_weights(positions, coeff=500):
 
 
 def callback(annealer, state_is_updated, model_is_updated):
-    if annealer.iter_count % 100 == 0:
-        print("{}: {}'th iter.".format(
+    if True:
+    # if annealer.iter_count % 100 == 0:
+        print("{}: {}'th iter. energy: {}, {}".format(
             annealer.__class__.__name__,
-            annealer.iter_count
+            annealer.iter_count,
+            annealer.model.energy(),
+            annealer
         ))
 
 
