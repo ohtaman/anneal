@@ -268,17 +268,11 @@ class QuantumIsingModel(PhysicalModel):
         return self.state.get_trotter_layer(trotter_idx)
 
     def observe_best(self):
-        classical_model = ClassicalIsingModel(
-            j=self.j,
-            h=self.h,
-            c=self.c,
-            state_shape=self.state.shape
-        )
         min_energy = sys.maxsize
         best_state = None
         for idx in range(self.n_trotter):
             classical_state = self.state.get_trotter_layer(idx)
-            classical_energy = classical_model.energy(classical_state)
+            classical_energy = self._classical_layer_energy(classical_state)
             if classical_energy < min_energy:
                 min_energy = classical_energy
                 best_state = classical_state
