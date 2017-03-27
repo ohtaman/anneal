@@ -89,7 +89,7 @@ class ClassicalIsingModel(PhysicalModel):
                 flatten_idx = np.ravel_multi_index(index, self.shape)
                 self._flatten[flatten_idx] *= -1
 
-    def __init__(self, j, h, c=0, state_type='qubo', state_shape=None, beta=0.1, state=None, neighbor_size=1, random=None):
+    def __init__(self, j, h, c=0, state_type='qubo', state_shape=None, beta=0.1, state=None, random=None):
         if state is None:
             assert(state_shape is not None)
             if state_type == 'qubo':
@@ -107,7 +107,6 @@ class ClassicalIsingModel(PhysicalModel):
         self.c = c
         self.beta = beta
         self._state = state
-        self.neighbor_size = neighbor_size
         if isinstance(random, np.random.RandomState):
             self.random_state = random
         else:
@@ -162,30 +161,22 @@ class ClassicalIsingModel(PhysicalModel):
         return e
 
     def update_state(self):
+        updated = False
+        indices = np.unravel_index(
+            self.random_state.permutation(self.state.size),
+            self.state.shape
+        )
         current_energy = self.energy()
-        flipped = self._flip_spins()
-        candidate_energy = self.energy()
-        delta = max(0.0, candidate_energy - current_energy)
-        if math.exp(-self.beta*delta) > self.random_state.rand():
-            return True
-        else:
-            # Cancel flipping
-            self._flip_spins(flipped)
-            return False
-
-    def _flip_spins(self, indices=None):
-        if indices is None:
-            num_flip = min(self.random_state.randint(self.neighbor_size) + 1, self.state.size)
-            indices = [
-                np.unravel_index(flatten_index, self.state.shape)
-                for flatten_index in self.random_state.choice(
-                    range(self.state.size),
-                    num_flip,
-                    replace=False
-                )
-            ]
-        self.state.flip_spins(indices)
-        return indices
+        for idx in indices:
+            self.state.flip_spins([idx])
+            candidate_energy = self.energy()
+            delta = max(0.0, candidate_energy - current_energy)
+            if math.exp(-self.beta*delta) > self.random_state.rand():
+                updated = True
+                current_energy = candidate_energy
+            else:
+                self.state.flip_spins([idx])
+        return updated
 
     @property
     def state(self):

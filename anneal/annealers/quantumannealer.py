@@ -6,13 +6,11 @@ from .annealer import Annealer
 
 
 class QuantumAnnealer(Annealer):
-    def __init__(self, model, beta_factor=1.0, gamma_factor=0.99, time_scale=100, wait_count=1000, freeze_limit=1000):
+    def __init__(self, model, beta_factor=1.0, gamma_factor=0.99, freeze_limit=1000):
         super().__init__(model)
 
         self.beta_factor = beta_factor
         self.gamma_factor = gamma_factor
-        self.time_scale = time_scale
-        self.wait_count = wait_count
         self.freeze_limit = freeze_limit
         self._freeze_count = 0
         self.min_energy = self.model.energy()
@@ -47,7 +45,5 @@ class QuantumAnnealer(Annealer):
         else:
             self._freeze_count += 1
 
-        if self.iter_count%self.time_scale == 0:
-            self.model.beta /= self.beta_factor
-        t = max(0, self.iter_count - self.wait_count)/self.time_scale
-        self.model.gamma = self._gamma_zero*np.exp(-self.gamma_factor**(-t))
+        self.model.beta /= self.beta_factor
+        self.model.gamma = self._gamma_zero*np.exp(-self.gamma_factor**(-self.iter_count))

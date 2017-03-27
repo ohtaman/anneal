@@ -117,7 +117,7 @@ class QuantumIsingModel(PhysicalModel):
             for index in indices:
                 self[index] *= -1
 
-    def __init__(self, j, h, c=0, state_type='qubo', state_shape=None, n_trotter=16, beta=1000, gamma=1.0, state=None, neighbor_size=1, random=None):
+    def __init__(self, j, h, c=0, state_type='qubo', state_shape=None, n_trotter=16, beta=1000, gamma=1.0, state=None, random=None):
         if state is None:
             assert(state_shape is not None)
             if state_type == 'qubo':
@@ -138,7 +138,6 @@ class QuantumIsingModel(PhysicalModel):
         self.beta = beta
         self.gamma = gamma
         self._state = state
-        self.neighbor_size = neighbor_size
         if isinstance(random, np.random.RandomState):
             self.random_state = random
         else:
@@ -176,7 +175,6 @@ class QuantumIsingModel(PhysicalModel):
             'state={}, '
             'beta={}, '
             'gamma={}, '
-            'neighbor_size={})'
         ).format(
             self.__class__.__name__,
             str(self.j)[:10] + '...',
@@ -185,7 +183,6 @@ class QuantumIsingModel(PhysicalModel):
             self.state,
             self.beta,
             self.gamma,
-            self.neighbor_size
         )
 
     def __str__(self):
@@ -242,40 +239,29 @@ class QuantumIsingModel(PhysicalModel):
         return e
 
     def update_state(self):
-        current_energy = self.energy()
         updated = False
         for layer in np.random.permutation(self.n_trotter):
-            flipped = self._flip_spins(trotter_layer=layer)
+            updated |= self._update_layer(layer)
+        return updated
+
+    def _update_layer(self, layer):
+        updated = False
+        indices = np.unravel_index(
+            self.random_state.permutation(self.state.size),
+            self.state.shape
+        )
+        current_energy = self.energy()
+        for idx_in_layer in indices:
+            idx = idx_in_layer + (layer,)
+            self.state.flip_spins([idx])
             candidate_energy = self.energy()
             delta = max(0.0, candidate_energy - current_energy)
             if math.exp(-self.beta*delta) > self.random_state.rand():
                 updated = True
                 current_energy = candidate_energy
             else:
-                # Cancel flipping
-                self._flip_spins(flipped)
+                self.state.flip_spins([idx])
         return updated
-
-    def _flip_spins(self, indices=None, trotter_layer=None):
-        if indices is None:
-            if trotter_layer is None:
-                trotter_layer = self.random_state.randint(self.n_trotter)
-            num_flip = min(
-                self.random_state.randint(self.neighbor_size) + 1,
-                self.state.size
-            )
-            indices = [
-                np.unravel_index(
-                    flatten_idx, self.state.shape
-                ) + (trotter_layer,)
-                for flatten_idx in self.random_state.choice(
-                    range(self.state.size),
-                    num_flip,
-                    replace=False
-                )
-            ]
-        self.state.flip_spins(indices)
-        return indices
 
     def observe(self):
         trotter_idx = self.random_state.randint(self.n_trotter)

@@ -4,11 +4,10 @@ from .annealer import Annealer
 
 
 class SimulatedAnnealer(Annealer):
-    def __init__(self, model, beta_factor=0.99, time_scale=100, freeze_limit=1000):
+    def __init__(self, model, beta_factor=0.99, freeze_limit=1000):
         super().__init__(model)
 
         self.beta_factor = beta_factor
-        self.time_scale = time_scale
         self.freeze_limit = freeze_limit
         self._freeze_count = 0
         self.min_energy = self.model.energy()
@@ -42,5 +41,4 @@ class SimulatedAnnealer(Annealer):
         else:
             self._freeze_count += 1
 
-        if self.iter_count%self.time_scale == 0:
-            self.model.beta /= self.beta_factor
+        self.model.beta /= self.beta_factor
