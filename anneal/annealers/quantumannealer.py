@@ -38,10 +38,12 @@ class QuantumAnnealer(Annealer):
 
     def update_model(self, state_is_updated):
         if state_is_updated:
-            energy = self.model.energy()
+            energy = self.model.classical_energy()
             if energy < self.min_energy:
                 self.min_energy = energy
                 self._freeze_count = 0
+            else:
+                self._freeze_count += 1
         else:
             self._freeze_count += 1
 

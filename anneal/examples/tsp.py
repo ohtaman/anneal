@@ -23,15 +23,15 @@ POSITIONS = [
     (24333.3333, 123733),
     (24333.3333, 123983),
     (24333.3333, 124150),
-    # (24333.3333, 124200),
-    # (24350.0000, 123733),
-    # (24350.0000, 123750),
-    # (24350.0000, 124216),
-    # (24350.0000, 124233),
-    # (24383.3333, 123750),
-    # (24383.3333, 124150),
-    # (24400.0000, 123833),
-    # (24416.6667, 123766),
+    (24333.3333, 124200),
+    (24350.0000, 123733),
+    (24350.0000, 123750),
+    (24350.0000, 124216),
+    (24350.0000, 124233),
+    (24383.3333, 123750),
+    (24383.3333, 124150),
+    (24400.0000, 123833),
+    (24416.6667, 123766),
     # (24416.6667, 124250),
     # (24433.3333, 122983),
     # (24450.0000, 122933),
@@ -107,11 +107,14 @@ def build_weights(positions, coeff=1.0):
 
 def callback(annealer, state_is_updated, model_is_updated):
     if True:
-    # if annealer.iter_count % 100 == 0:
+        if hasattr(annealer.model, 'classical_energy'):
+            energy = annealer.model.classical_energy()
+        else:
+            energy = annealer.model.energy()
         print("{}: {}'th iter. energy: {}, {}".format(
             annealer.__class__.__name__,
             annealer.iter_count,
-            annealer.model.energy(),
+            energy,
             annealer
         ))
 
