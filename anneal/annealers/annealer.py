@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 
 import abc
-import sys
+
 
 class Annealer(metaclass=abc.ABCMeta):
     def __init__(self, model):
@@ -12,11 +12,11 @@ class Annealer(metaclass=abc.ABCMeta):
         """ Alias of self.optimize. """
         return self.optimize(**kwargs)
 
-    def optimize(self, max_iter=sys.maxsize, iter_callback=None):
+    def optimize(self, max_iter=100000, iter_callback=None):
         """ Minimize the energy of self.model by annealing.
 
         Args:
-            max_iter (int): Maximum number of iterations. Defaults to inf.
+            max_iter (int): Maximum number of iterations. Defaults to 100000.
             iter_callback (callable): Callback function which called on each iteration.
 
         Returns:
@@ -31,14 +31,13 @@ class Annealer(metaclass=abc.ABCMeta):
 
         return self.is_frozen()
 
-    @abc.abstractmethod
     def is_frozen(self):
         """ Frozen function.
 
         Returns:
             bool: True if the state is frozen, False if not.
         """
-        pass
+        return False
 
     @abc.abstractmethod
     def update_model(self, state_is_updated):
