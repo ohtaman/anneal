@@ -117,7 +117,7 @@ class QuantumIsingModel(PhysicalModel):
             for index in indices:
                 self[index] *= -1
 
-    def __init__(self, j, h, c=0, state_type='qubo', state_shape=None, n_trotter=16, beta=1, gamma=0.1, state=None, random=None):
+    def __init__(self, j, h, c=0, state_type='qubo', state_shape=None, n_trotter=16, beta=100, gamma=1.0, state=None, random=None):
         if state is None:
             assert(state_shape is not None)
             if state_type == 'qubo':
