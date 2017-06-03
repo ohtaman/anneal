@@ -2,6 +2,7 @@
 
 import abc
 import math
+import numbers
 
 import numpy as np
 import scipy.sparse as sp
@@ -10,128 +11,44 @@ from .physicalmodel import PhysicalModel
 
 
 class ClassicalIsingModel(PhysicalModel):
-    class State(PhysicalModel.State):
-        """
-        State of classical ising model.
+    @classmethod
+    def initial_state(cls, shape, state_type):
+        if state_type == 'qubo':
+            return cls.initial_qubo_state(shape)
+        elif state_type == 'ising':
+            return cls.initial_ising_state(shape)
 
-        Arguments:
-            sigma (ndarray or list): The sigma value.
-        """
+    @classmethod
+    def initial_qubo_state(cls, shape):
+        return np.random.randint(2, size=shape, dtype=np.int8)
 
-        def __init__(self, sigma):
-            self._flatten = np.array(sigma).flatten()
-            self.shape = sigma.shape
+    @classmethod
+    def initial_ising_state(cls, shape):
+        return np.random.randint(2, size=shape, dtype=np.int8)*2 - 1
 
-        @abc.abstractclassmethod
-        def random_state(cls, shape, random=None):
-            """
-            Generate random state with given shape.
-
-            Arguments:
-                shape (tuple of int): Shape of state.
-            """
-            pass
-
-        def __getitem__(self, idx):
-            flatten_idx = np.ravel_multi_index(idx, self.shape)
-            return self._flatten[flatten_idx]
-
-        def __setitem__(self, idx, value):
-            flatten_idx = np.ravel_multi_index(idx, self.shape)
-            self._flatten[flatten_idx] = value
-            return self
-
-        def __repr__(self):
-            return '{}(sigma=np.array({}))'.format(
-                self.__class__.__name__,
-                self.shape
-            )
-
-        def __str__(self):
-            return self.__repr__()
-
-        def get_flatten_array(self):
-            return self._flatten
-
-        def to_array(self):
-            return self._flatten.reshape(self.shape)
-
-        @abc.abstractmethod
-        def flip_spins(self, indices):
-            pass
-
-        @property
-        def size(self):
-            return self._flatten.size
-
-    class QUBOState(State):
-        @classmethod
-        def random_state(cls, shape, random=None):
-            if random is None:
-                random = np.random
-            return cls(random.randint(0, 2, size=shape))
-
-        def flip_spins(self, indices):
-            for index in indices:
-                flatten_idx = np.ravel_multi_index(index, self.shape)
-                self._flatten[flatten_idx] *= -1
-                self._flatten[flatten_idx] += 1
-
-    class IsingState(State):
-        @classmethod
-        def random_state(cls, shape, random=None):
-            if random is None:
-                random = np.random
-            return cls(2*random.randint(0, 2, size=shape) - 1)
-
-        def flip_spins(self, indices):
-            for index in indices:
-                flatten_idx = np.ravel_multi_index(index, self.shape)
-                self._flatten[flatten_idx] *= -1
-
-    def __init__(self, j, h, c=0, state_type='qubo', state_shape=None, beta=0.1, state=None, random=None):
+    def __init__(self, j, h, c=0, beta=1.0, state=None, state_size=None, state_type='qubo', random_state=None):
         if state is None:
-            assert(state_shape is not None)
-            if state_type == 'qubo':
-                State = self.QUBOState
-            elif state_type == 'ising':
-                State = self.IsingState
-            else:
-                raise ValueError('Unknown state type "{}"'.format(state_type))
-            state = State.random_state(state_shape)
-        else:
-            assert(state_shape is None or state_shape == state.shape)
+            state = self.initial_state(state_size, state_type)
+        self.state_size = state.size
+
+        j = self._as_matrix(j, (self.state_size, self.state_size))
+        h = self._as_matrix(h, self.state_size)
+        j, h = self._to_triangular(j, h)
+        j = sp.csr_matrix(j)
+        jt = j.T.tocsr()
 
         self.j = j
+        self.jt = jt
         self.h = h
         self.c = c
         self.beta = beta
         self._state = state
-        if isinstance(random, np.random.RandomState):
-            self.random_state = random
+        self.state_type = state_type
+        self._is_qubo = 1 if state_type == 'qubo' else 0
+        if isinstance(random_state, (numbers.Number, None.__class__)):
+            self.random_state = np.random.RandomState(random_state)
         else:
-            self.random_state = np.random.RandomState(random)
-
-        if isinstance(j, dict):
-            dok_flatten_j = sp.dok_matrix((self.state.size, self.state.size))
-            for idx, value in j.items():
-                x = np.ravel_multi_index(idx[:len(state.shape)], self.state.shape)
-                y = np.ravel_multi_index(idx[len(state.shape):], self.state.shape)
-                dok_flatten_j[x, y] = value
-            self._flatten_j = dok_flatten_j.tocsr()
-        elif isinstance(j, list):
-            self._flatten_j = np.array(j).reshape(state.size, state.size)
-        elif isinstance(j, np.ndarray):
-            self._flatten_j = j.reshape(state.size, state.size)
-        else:
-            raise ValueError('Only dict or is supported.')
-
-        if isinstance(h, dict):
-            self._flatten_h = np.zeros(self.state.size)
-        elif isinstance(h, list):
-            self._flatten_h = np.array(h).flatten()
-        elif isinstance(h, np.ndarray):
-            self._flatten_h = h.flatten()
+            self.random_state = random_state
 
     def __repr__(self):
         return (
@@ -141,6 +58,8 @@ class ClassicalIsingModel(PhysicalModel):
             'c={}, '
             'beta={}, '
             'state={}, '
+            'state_type={}, '
+            'random={}'
             ')'
         ).format(
             self.__class__.__name__,
@@ -148,34 +67,54 @@ class ClassicalIsingModel(PhysicalModel):
             str(self.h)[:10] + '...',
             self.c,
             self.beta,
-            self.state
+            str(self.h)[:10] + '...',
+            self.state_type,
+            self.random_state
         )
 
-    def energy(self, state=None):
-        if state is None:
-            state = self.state
-        flatten_state = state.get_flatten_array()
+    @staticmethod
+    def _as_matrix(list_or_dict, shape=None):
+        if isinstance(list_or_dict, dict):
+            matrix = np.zeros(shape)
+            for (i, j), v in list_or_dict.items():
+                matrix[i, j] = v
+            return matrix
+        else:
+            return list_or_dict
+
+    @staticmethod
+    def _to_triangular(j, h):
+        h = h + j.diagonal()**2
+        j = (1 - np.tri(h.size))*(j + j.T)
+        return j, h
+
+    def _flip_spin(self, index):
+        self._state[index] *= -1
+        if self._is_qubo:
+            self._state[index] += 1
+
+    def energy_diff(self, index):
+        return (1 if self._state[index] > 0 else -1)*(
+            self.j[index].dot(self._state)[0]
+            + self.jt[index].dot(self._state)[0]
+            + self.h[index]
+        )
+
+    def energy(self):
         e = -self.c
-        e -= flatten_state.dot(self._flatten_j.dot(flatten_state))
-        e -= self._flatten_h.dot(flatten_state)
+        e -= self.j.dot(self._state).dot(self._state)
+        e -= self.h.dot(self._state)
         return e
 
     def update_state(self):
         updated = False
-        indices = (
-            np.unravel_index(_, self.state.shape)
-            for _ in self.random_state.permutation(self.state.size)
-        )
-        current_energy = self.energy()
-        for idx in indices:
-            self.state.flip_spins([idx])
-            candidate_energy = self.energy()
-            delta = max(0.0, candidate_energy - current_energy)
+        indices = self.random_state.permutation(self.state_size)
+
+        for index in indices:
+            delta = max(0., self.energy_diff(index))
             if math.exp(-self.beta*delta) > self.random_state.rand():
+                self._flip_spin(index)
                 updated = True
-                current_energy = candidate_energy
-            else:
-                self.state.flip_spins([idx])
         return updated
 
     @property

@@ -1,70 +1,10 @@
 # -*- coding:utf-8 -*-
 
 import numpy as np
+import scipy.sparse as sp
 import pytest
 
 from anneal.models.quantumisingmodel import QuantumIsingModel
-
-
-class TestState(object):
-    def test_can_create(self):
-        sigma = np.array([[1, 1], [-1, -1]])
-        testee = QuantumIsingModel.State(sigma, None)
-        assert testee.shape == sigma.shape[:-1]
-
-    def test_getitem(self):
-        sigma = np.array([[1, 1], [-1, -1]])
-        testee = QuantumIsingModel.State(sigma, None)
-        assert testee[0, 1] == 1
-        assert testee[1, 1] == -1
-
-    def test_setitem(self):
-        sigma = np.array([[1, 1], [-1, -1]])
-        testee = QuantumIsingModel.State(sigma, None)
-        testee[1, 1] = 1
-        assert testee[1, 1] == 1
-
-    def test_get_flatten_array(self):
-        sigma = np.array([[[1, 1], [1, 1]], [[-1, -1], [-1, -1]]])
-        testee = QuantumIsingModel.State(sigma, None)
-        assert (testee.get_flatten_array() == sigma.reshape((-1, 2))).all()
-
-    def test_to_array(self):
-        sigma = np.array([[1, 1], [-1, -1]])
-        testee = QuantumIsingModel.State(sigma, None)
-        assert (testee.to_array() == sigma).all()
-
-
-class TestQUBOState(object):
-    def test_can_create(self):
-        testee = QuantumIsingModel.QUBOState.random_state((5, 5), 2)
-        array = testee.to_array()
-        assert testee.shape == (5, 5)
-        assert ((array == 1) + (array == 0)).all()
-
-    def test_flip_spins(self):
-        sigma = np.array([[[1, 1], [1, 1]], [[0, 0], [0, 0]]])
-        flip_idx = ((0, 0, 0), (1, 1, 1))
-        flipped = np.array([[[0, 1], [1, 1]], [[0, 0], [0, 1]]])
-        testee = QuantumIsingModel.QUBOState(sigma)
-        testee.flip_spins(flip_idx)
-        assert (testee.to_array() == flipped).all()
-
-
-class TestIsingState(object):
-    def test_can_create(self):
-        testee = QuantumIsingModel.IsingState.random_state((5, 5), 2)
-        array = testee.to_array()
-        assert testee.shape == (5, 5)
-        assert ((array == 1) + (array == -1)).all()
-
-    def test_flip_spins(self):
-        sigma = np.array([[[1, 1], [1, 1]], [[-1, -1], [-1, -1]]])
-        flip_idx = ((0, 0, 0), (1, 1, 1))
-        flipped = np.array([[[-1, 1], [1, 1]], [[-1, -1], [-1, 1]]])
-        testee = QuantumIsingModel.IsingState(sigma)
-        testee.flip_spins(flip_idx)
-        assert (testee.to_array() == flipped).all()
 
 
 class TestQuantumIsingModel(object):
@@ -78,14 +18,14 @@ class TestQuantumIsingModel(object):
         c = 1
         beta = 1
         gamma = 2
-        testee = QuantumIsingModel(j, h, c, state_shape=(3,), beta=beta, gamma=gamma)
-        assert testee.j == j
-        assert testee.h == h
+        testee = QuantumIsingModel(j, h, c, state_size=3, beta=beta, gamma=gamma)
+        assert (testee.j == np.array([[0, 1, 2],[0, 0, 3],[0, 0, 0]])).all()
+        assert (testee.h == h).all()
         assert testee.c == c
         assert testee.beta == beta
         assert testee.gamma == gamma
-        assert testee.state.shape == (3,)
-        assert testee.state.__class__ == QuantumIsingModel.QUBOState
+        assert testee.state.shape == (testee.n_trotter, 3)
+        assert testee.state_type == 'qubo'
 
     def test_energy(self):
         j = {
@@ -97,9 +37,8 @@ class TestQuantumIsingModel(object):
         c = 1
         beta = 1
         gamma = 2
-        sigma = np.array([[1, 1], [1, 0], [0, 1]])
-        n_trotter = sigma.shape[-1]
-        state = QuantumIsingModel.QUBOState(sigma)
+        state = np.array([[1, 1, 0], [1, 0, 1]])
+        n_trotter = state.shape[0]
         testee = QuantumIsingModel(j, h, c, state=state, beta=beta, gamma=gamma)
         # When gamma == 0, energy must just be average energy of trotter layers.
         classical_energy = (
@@ -122,23 +61,8 @@ class TestQuantumIsingModel(object):
         h = [1, 2, 3]
         c = 1
         beta = 1
-        sigma = np.array([[1, 1], [1, 0], [0, 1]])
-        state = QuantumIsingModel.QUBOState(sigma)
-        testee = QuantumIsingModel(j, h, c, state=state, beta=beta, random=2)
+        state = np.array([[1, 1, 0], [1, 0, 1]])
+        testee = QuantumIsingModel(j, h, c, state=state.copy(), beta=beta, random_state=2)
         is_updated = testee.update_state()
         assert is_updated is True
-        assert (testee.state.to_array() != sigma).any()
-
-    def test_state(self):
-        j = {
-            (0, 1): 1,
-            (0, 2): 2,
-            (1, 2): 3
-        }
-        h = [1, 2, 3]
-        c = 1
-        beta = 1
-        sigma = np.array([[1, 1], [1, 0], [0, 1]])
-        state = QuantumIsingModel.QUBOState(sigma)
-        testee = QuantumIsingModel(j, h, c, state=state, beta=beta)
-        assert testee.state == state
+        assert (testee.state != state).any()

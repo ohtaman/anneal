@@ -4,9 +4,6 @@ import abc
 
 
 class PhysicalModel(object, metaclass=abc.ABCMeta):
-    class State(object):
-        pass
-
     def objective_value(self):
         return self.energy()
 

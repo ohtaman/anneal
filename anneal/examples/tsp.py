@@ -32,36 +32,36 @@ POSITIONS = [
     (24383.3333, 124150),
     (24400.0000, 123833),
     (24416.6667, 123766),
-    # (24416.6667, 124250),
-    # (24433.3333, 122983),
-    # (24450.0000, 122933),
-    # (24450.0000, 124133),
-    # (24450.0000, 124183),
-    # (24466.6667, 123000),
-    # (24500.0000, 124283),
-    # (24583.3333, 124316),
-    # (24666.6667, 124700),
-    # (24716.6667, 125333),
-    # (24733.3333, 125283),
-    # (24733.3333, 125316),
-    # (24733.3333, 125350),
-    # (24733.3333, 125400),
-    # (24733.3333, 125416),
-    # (24750.0000, 125266),
-    # (24750.0000, 125283),
-    # (24766.6667, 125366),
-    # (24783.3333, 125266),
-    # (24783.3333, 125300),
-    # (24783.3333, 141316),
-    # (24783.3333, 141333),
-    # (24800.0000, 125166),
-    # (24800.0000, 125283),
-    # (24800.0000, 141300),
-    # (24800.0000, 141316),
-    # (24800.0000, 141333),
-    # (24816.6667, 125166),
-    # (24816.6667, 125300),
-    # (24833.3333, 125166),
+    (24416.6667, 124250),
+    (24433.3333, 122983),
+    (24450.0000, 122933),
+    (24450.0000, 124133),
+    (24450.0000, 124183),
+    (24466.6667, 123000),
+    (24500.0000, 124283),
+    (24583.3333, 124316),
+    (24666.6667, 124700),
+    (24716.6667, 125333),
+    (24733.3333, 125283),
+    (24733.3333, 125316),
+    (24733.3333, 125350),
+    (24733.3333, 125400),
+    (24733.3333, 125416),
+    (24750.0000, 125266),
+    (24750.0000, 125283),
+    (24766.6667, 125366),
+    (24783.3333, 125266),
+    (24783.3333, 125300),
+    (24783.3333, 141316),
+    (24783.3333, 141333),
+    (24800.0000, 125166),
+    (24800.0000, 125283),
+    (24800.0000, 141300),
+    (24800.0000, 141316),
+    (24800.0000, 141333),
+    (24816.6667, 125166),
+    (24816.6667, 125300),
+    (24833.3333, 125166),
 ]
 
 
@@ -73,56 +73,55 @@ def dist(a, b):
 
 def build_weights(positions, coeff=1.0):
     n_cities = len(positions)
+    n_vars = n_cities*n_cities
 
-    j = collections.defaultdict(int)
-    max_dist = 0
+    def index(a, t):
+        return n_cities*a + t
+
+    j = np.zeros((n_vars, n_vars))
     for t in range(n_cities):
         for a in range(n_cities):
             for b in range(n_cities):
                 d = dist(positions[a], positions[b])
-                max_dist = d if max_dist < d else max_dist
-                j[(a, t, b, (t + 1)%n_cities)] = -d
+                j[index(a, t), index(b, (t + 1)%n_cities)] = -d
 
-    A = max_dist * coeff
+    max_length = -j.min()
+    A = coeff*max_length
     for t in range(n_cities):
         for a in range(n_cities):
             for b in range(n_cities):
                 if a != b:
-                    j[(a, t, b, t)] -= 2*A
+                    j[index(a, t), index(b, t)] -= 2*A
 
     for a in range(n_cities):
         for t1 in range(n_cities):
             for t2 in range(n_cities):
                 if t1 != t2:
-                    j[(a, t1, a, t2)] -= 2*A
+                    j[index(a, t1), index(a, t2)] -= 2*A
 
-    h = np.zeros((n_cities, n_cities))
+    h = np.zeros(n_vars)
     for t in range(n_cities):
         for a in range(n_cities):
-            h[a, t] += 2*A
+            h[index(a, t)] += 2*A
 
     c = -2*A*n_cities
     return j, h, c
 
 
 def callback(annealer, state_is_updated, model_is_updated):
-    if True:
-        if hasattr(annealer.model, 'classical_energy'):
-            energy = annealer.model.classical_energy()
-        else:
-            energy = annealer.model.energy()
-        print("{}: {}'th iter. energy: {}, {}".format(
-            annealer.__class__.__name__,
-            annealer.iter_count,
-            energy,
-            annealer
-        ))
+    print("{}: {}'th iter. objective: {}, energy: {}, {}".format(
+        annealer.__class__.__name__,
+        annealer.iter_count,
+        annealer.model.objective_value(),
+        annealer.model.energy(),
+        annealer
+    ))
 
 
 def check_constraints(state):
     return (
-        (state.to_array().sum(axis=1) == 1).all()
-        and (state.to_array().sum(axis=0) == 1).all()
+        (state.sum(axis=1) == 1).all()
+        and (state.sum(axis=0) == 1).all()
     )
 
 def solve_tsp():
@@ -132,11 +131,11 @@ def solve_tsp():
     min_energy = float('inf')
     best_annealer = None
     iter = 0
-    for i in range(16):
+    for i in range(3):
         print('{}th challenge.'.format(i))
-        c_model = ClassicalIsingModel(j, h, c, state_shape=h.shape)
+        c_model = ClassicalIsingModel(j, h, c, beta=1e-4, state_size=h.size)
         c_annealer = SimulatedAnnealer(c_model)
-        c_annealer.anneal(iter_callback=callback)
+        c_annealer.anneal(max_iter=100, iter_callback=callback)
         energy = c_model.objective_value()
         iter += c_annealer.iter_count
         if energy < min_energy:
@@ -144,23 +143,22 @@ def solve_tsp():
             best_annealer = c_annealer
 
     best_model = best_annealer.model
+    best_state = best_model.state.reshape((len(POSITIONS), len(POSITIONS)))
     print('annealing time: {}'.format(time.time() - start))
     print('annealer: {}'.format(best_annealer))
-    print('iterations(average): {}'.format(iter/16))
     print('objective: {}'.format(best_model.objective_value()))
-    print('best_state: {}'.format(best_model.state.to_array()))
-    print('validity: {}'.format(check_constraints(best_model.state)))
+    print('best_state: {}'.format(best_state))
+    print('validity: {}'.format(check_constraints(best_state)))
 
     start = time.time()
-    q_model = QuantumIsingModel(j, h, c, state_shape=h.shape, n_trotter=16)
+    q_model = QuantumIsingModel(j, h, c, gamma=10, state_size=h.size, n_trotter=16)
     q_annealer = QuantumAnnealer(q_model)
-    q_annealer.anneal(iter_callback=callback)
-    observed = q_model.observe_best()
+    q_annealer.anneal(max_iter=100, iter_callback=callback)
+    observed = q_model.observe_best().reshape((len(POSITIONS), len(POSITIONS)))
     print('annealing time: {}'.format(time.time() - start))
     print('annealer: {}'.format(q_annealer))
-    print('iterations: {}'.format(q_annealer.iter_count))
     print('objective: {}'.format(q_model.objective_value()))
-    print('best state: {}'.format(observed.to_array()))
+    print('best state: {}'.format(observed))
     print('validity: {}'.format(check_constraints(observed)))
 
 

@@ -12,11 +12,11 @@ class Annealer(metaclass=abc.ABCMeta):
         """ Alias of self.optimize. """
         return self.optimize(**kwargs)
 
-    def optimize(self, max_iter=100000, iter_callback=None):
+    def optimize(self, max_iter=1000, iter_callback=None):
         """ Minimize the energy of self.model by annealing.
 
         Args:
-            max_iter (int): Maximum number of iterations. Defaults to 100000.
+            max_iter (int): Maximum number of iterations. Defaults to 1000.
             iter_callback (callable): Callback function which called on each iteration.
 
         Returns:
