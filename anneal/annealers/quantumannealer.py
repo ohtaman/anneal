@@ -6,31 +6,20 @@ from .annealer import Annealer
 
 
 class QuantumAnnealer(Annealer):
-    def __init__(self, model, beta_factor=1.0, gamma_factor=0.95):
+    def __init__(self, model):
         super().__init__(model)
-        self.beta_factor = beta_factor
-        self.gamma_factor = gamma_factor
-        self.min_energy = self.model.energy()
+        self.initial_gamma = model.gamma
 
     def __repr__(self):
         return (
             'QuantumAnnealer('
-            'model={}, '
-            'beta_factor={}, '
-            'gamma_factor={})'
+            'model={})'
         ).format(
-            self.model,
-            self.beta_factor,
-            self.gamma_factor
+            self.model
         )
 
     def __str__(self):
         return self.__repr__()
 
     def update_model(self, state_is_updated):
-        if state_is_updated:
-            energy = self.model.classical_energy()
-            if energy < self.min_energy:
-                self.min_energy = energy
-        self.model.beta *= self.beta_factor
-        self.model.gamma *= self.gamma_factor
+        self.model.gamma = self.initial_gamma*(self._max_iter - self.iter_count)/self._max_iter

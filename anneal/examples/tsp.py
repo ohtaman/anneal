@@ -131,7 +131,7 @@ def solve_tsp():
     min_energy = float('inf')
     best_annealer = None
     iter = 0
-    for i in range(3):
+    for i in range(1):
         print('{}th challenge.'.format(i))
         c_model = ClassicalIsingModel(j, h, c, beta=1e-4, state_size=h.size)
         c_annealer = SimulatedAnnealer(c_model)
@@ -151,7 +151,7 @@ def solve_tsp():
     print('validity: {}'.format(check_constraints(best_state)))
 
     start = time.time()
-    q_model = QuantumIsingModel(j, h, c, gamma=10, state_size=h.size, n_trotter=16)
+    q_model = QuantumIsingModel(j, h, c, gamma=1000, beta=1e-3, state_size=h.size, n_trotter=16)
     q_annealer = QuantumAnnealer(q_model)
     q_annealer.anneal(max_iter=100, iter_callback=callback)
     observed = q_model.observe_best().reshape((len(POSITIONS), len(POSITIONS)))

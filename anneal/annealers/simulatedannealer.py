@@ -4,29 +4,20 @@ from .annealer import Annealer
 
 
 class SimulatedAnnealer(Annealer):
-    def __init__(self, model, beta_factor=1.05):
+    def __init__(self, model):
         super().__init__(model)
-
-        self.beta_factor = beta_factor
-        self.min_energy = self.model.energy()
+        self.initial_beta = model.beta
 
     def __repr__(self):
         return (
             'SimulatedAnnealer('
-            'model={}, '
-            'beta_factor={})'
+            'model={})'
         ).format(
-            self.model,
-            self.beta_factor
+            self.model
         )
 
     def __str__(self):
         return self.__repr__()
 
     def update_model(self, state_is_updated):
-        if state_is_updated:
-            energy = self.model.energy()
-            if energy < self.min_energy:
-                self.min_energy = energy
-
-        self.model.beta *= self.beta_factor
+        self.model.beta = self.initial_beta*self._max_iter/(self._max_iter - self.iter_count)

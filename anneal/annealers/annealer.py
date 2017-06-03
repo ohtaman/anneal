@@ -22,6 +22,7 @@ class Annealer(metaclass=abc.ABCMeta):
         Returns:
             bool: True if the state is frozen, False if iteration count exceeds.
         """
+        self._max_iter = max_iter
         while (not self.is_frozen()) and (self.iter_count < max_iter):
             state_is_updated = self.model.update_state()
             model_is_updated = self.update_model(state_is_updated)
