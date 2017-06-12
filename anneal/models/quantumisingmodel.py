@@ -118,7 +118,7 @@ class QuantumIsingModel(PhysicalModel):
 
     @staticmethod
     def _to_triangular(j, h):
-        h = h + j.diagonal()**2
+        h = h + j.diagonal()
         j = (1 - np.tri(h.size))*(j + j.T)
         return j, h
 
