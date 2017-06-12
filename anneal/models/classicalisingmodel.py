@@ -36,9 +36,10 @@ class ClassicalIsingModel(PhysicalModel):
         j, h = self._to_triangular(j, h)
         j = sp.csr_matrix(j)
         jt = j.T.tocsr()
+        j2 = j + jt  # j2 == j + jt
 
         self.j = j
-        self.jt = jt
+        self.j2 = j2
         self.h = h
         self.c = c
         self.beta = beta
@@ -94,9 +95,13 @@ class ClassicalIsingModel(PhysicalModel):
             self._state[index] += 1
 
     def energy_diff(self, index):
-        return (1 if self._state[index] > 0 else -1)*(
-            self.j[index].dot(self._state)[0]
-            + self.jt[index].dot(self._state)[0]
+        if self._is_qubo:
+            sign = self._state[index]*2 - 1
+        else:
+            sign = self._state[index]
+
+        return sign*(
+            self.j2.dot(self._state)[index]
             + self.h[index]
         )
 

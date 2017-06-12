@@ -9,7 +9,6 @@ import numpy as np
 import scipy.sparse as sp
 
 from .physicalmodel import PhysicalModel
-from .classicalisingmodel import ClassicalIsingModel
 
 
 class QuantumIsingModel(PhysicalModel):
@@ -39,9 +38,10 @@ class QuantumIsingModel(PhysicalModel):
         j, h = self._to_triangular(j, h)
         j = sp.csr_matrix(j)
         jt = j.T.tocsr()
+        j2 = j + jt
 
         self.j = j
-        self.jt = jt
+        self.j2 = j2
         self.h = h
         self.c = c
         self.n_trotter = n_trotter
@@ -103,8 +103,8 @@ class QuantumIsingModel(PhysicalModel):
 
     def _update_coeff(self):
         # Avoid overflow
-        beta_gamma = max(np.finfo(float).eps, self.beta*self.gamma)
-        self._coeff = -np.log(np.tanh(beta_gamma/self.n_trotter))/(2.*self.beta)
+        beta_gamma = max(np.finfo(float).eps, self._beta*self._gamma)
+        self._coeff = -np.log(np.tanh(beta_gamma/self.n_trotter))/(2.*self._beta)
 
     @staticmethod
     def _as_matrix(list_or_dict, shape=None):
@@ -131,15 +131,15 @@ class QuantumIsingModel(PhysicalModel):
         layer = self._state[trotter_index]
         spin = layer[index]
         prev_spin = self._state[trotter_index - 1, index]
-        next_spin = self._state[(trotter_index + 1)%self.n_trotter, index]
+        next_spin = self._state[(trotter_index + 1)%self.n_trotter, index]*2 - 1
+
         if self._is_qubo:
             spin = spin*2 - 1
             prev_spin = prev_spin*2 - 1
             next_spin = next_spin*2 - 1
 
         classical_diff = spin*(
-            self.j[index].dot(layer)[0]
-            + self.jt[index].dot(layer)[0]
+            self.j2.dot(layer)[index]
             + self.h[index]
         )/self.n_trotter
 
@@ -168,6 +168,7 @@ class QuantumIsingModel(PhysicalModel):
             spin = 2*self._state - 1
         else:
             spin = self._state
+
         return -self._coeff*(
             (spin[:-1]*spin[1:]).sum()
             + spin[-1].dot(spin[0])
@@ -177,9 +178,10 @@ class QuantumIsingModel(PhysicalModel):
         updated = False
         for trotter_index in range(self.n_trotter):
             indices = self.random_state.permutation(self.state_size)
+            r = self.random_state.rand(self.state_size)
             for index in indices:
                 delta = max(0., self.energy_diff(index, trotter_index))
-                if math.exp(-self.beta*delta) > self.random_state.rand():
+                if math.exp(-self._beta*delta) > r[index]:
                     self._flip_spin(index, trotter_index)
                     updated = True
         return updated
