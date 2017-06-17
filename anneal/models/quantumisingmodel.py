@@ -27,7 +27,7 @@ class QuantumIsingModel(PhysicalModel):
     def initial_ising_state(cls, size, n_trotter):
         return np.random.randint(2, size=(n_trotter, size), dtype=np.int8)*2 - 1
 
-    def __init__(self, j, h, c=0, beta=1.0, gamma=1.0, n_trotter=16, state=None, state_size=None, state_type='qubo', random_state=None):
+    def __init__(self, j, h, c=0, beta=1.0, gamma=1.0, n_trotter=16, global_flip=False, state=None, state_size=None, state_type='qubo', random_state=None):
         if state is None:
             state = self.initial_state(state_size, n_trotter, state_type)
         else:
@@ -48,6 +48,7 @@ class QuantumIsingModel(PhysicalModel):
         self._beta = beta
         self._gamma = gamma
         self._update_coeff()
+        self.global_flip = global_flip
         self._state = state
         self.state_size = state_size
         self.state_type = state_type
@@ -127,11 +128,16 @@ class QuantumIsingModel(PhysicalModel):
         if self._is_qubo:
             self._state[trotter_index, index] += 1
 
+    def _flip_spin_global(self, index):
+        self._state[:, index] *= -1
+        if self._is_qubo:
+            self._state[:, index] += 1
+
     def energy_diff(self, index, trotter_index):
         layer = self._state[trotter_index]
         spin = layer[index]
         prev_spin = self._state[trotter_index - 1, index]
-        next_spin = self._state[(trotter_index + 1)%self.n_trotter, index]*2 - 1
+        next_spin = self._state[(trotter_index + 1)%self.n_trotter, index]
 
         if self._is_qubo:
             spin = spin*2 - 1
@@ -145,6 +151,13 @@ class QuantumIsingModel(PhysicalModel):
 
         quantum_diff = self._coeff*spin*(prev_spin + next_spin)
         return classical_diff + quantum_diff
+
+    def energy_diff_global_flip(self, index):
+        spins = self._state[:, index]
+        if self._is_qubo:
+            spins = spins*2 -1
+
+        return spins.dot(self.j2.dot(self._state.T)[index] + self.h[index])
 
     def energy(self):
         return self.classical_energy() + self.quantum_energy()
@@ -183,6 +196,15 @@ class QuantumIsingModel(PhysicalModel):
                 delta = max(0., self.energy_diff(index, trotter_index))
                 if math.exp(-self._beta*delta) > r[index]:
                     self._flip_spin(index, trotter_index)
+                    updated = True
+
+        if self.global_flip:
+            indices = self.random_state.permutation(self.state_size)
+            r = self.random_state.rand(self.state_size)
+            for index in indices:
+                delta = max(0., self.energy_diff_global_flip(index))
+                if math.exp(-self._beta*delta) > r[index]:
+                    self._flip_spin_global(index)
                     updated = True
         return updated
 
