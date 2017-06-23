@@ -226,7 +226,7 @@ class QuantumIsingModel(PhysicalModel):
             if energy < min_energy:
                 min_energy = energy
                 best_index = i
-        return self._state[i]
+        return self._state[best_index]
 
     @property
     def state(self):
